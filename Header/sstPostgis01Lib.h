@@ -155,7 +155,7 @@ class sstPGisTableMemberCls
      void setMemberType(const std::string &value);
 
 private:  // Private functions
-     std::string MemberName;        /**< Name of Table Member */
+  std::string MemberName;        /**< Name of Table Member */
   std::string MemberType;        /**< Type of Table Member */
 };
 //==============================================================================
