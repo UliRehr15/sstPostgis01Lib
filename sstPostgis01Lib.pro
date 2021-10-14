@@ -19,7 +19,6 @@ INCLUDEPATH += ./Header
 
 
 SOURCES += \
-        main.cpp \
         sstPostgis01Sql1.cpp
 
 DISTFILES += \

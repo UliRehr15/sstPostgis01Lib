@@ -69,45 +69,11 @@ int sstPostGis01_CvtSqlStr::AppendCoor2String (int             iKey,
   return iStat;
 }
 //=============================================================================
-//int sstPostGis01_CvtSqlStr::PR_PointCoor2String (int                  iKey,
-//                                                 PtsDssBase_Cls   *oPtssDB,
-//                                                 dREC04RECNUMTYP   dPR_RecNum,
-//                                                 std::string      *oSQL_Str)
-////-----------------------------------------------------------------------------
-//{
-//  unsigned long dRecNumMain;
-//  dREC04RECNUMTYP dRecNumPK;
-//  sstPostGis01_CvtSqlStr oCvtSqlStr;
-
-//  PtssTypPRCls  oPR_Rec;
-//  PtssTypPKCls  oPK_Rec;
-
-//  int iStat = 0;
-////-----------------------------------------------------------------------------
-//  if ( iKey != 0) return -1;
-
-//  char cDblFrmt[10];
-//  strncpy(cDblFrmt,"%12.2f",10);
-
-//  // Read PR record from table with record number
-//  dRecNumMain = 0;
-//  oPtssDB->ReadDbPR(0,dPR_RecNum,&oPR_Rec,&dRecNumMain);
-
-//  // Seach PointNumber in Table PK <BR>
-//  dRecNumPK = 0;
-//  iStat = oPtssDB->SeachPointNumberTablePK ( 0, oPR_Rec.PR2, &oPK_Rec, &dRecNumPK);
-//  if (iStat < 0) return -2;
-
-//  // write coordinates to new string <BR>
-//  iStat = oCvtSqlStr.AppendCoor2String( 0, oPK_Rec.dXX, oPK_Rec.dYY, oSQL_Str);
-
-//  return iStat;
-//}
-//=============================================================================
 sstPGisTableMemberCls::sstPGisTableMemberCls()
 {
   this->MemberName.clear();
   this->MemberType.clear();
+  this->MemberValue.clear();
 }
 //=============================================================================
 std::string sstPGisTableMemberCls::getMemberName() const
@@ -128,6 +94,16 @@ return MemberType;
 void sstPGisTableMemberCls::setMemberType(const std::string &value)
 {
 MemberType = value;
+}
+//=============================================================================
+std::string sstPGisTableMemberCls::getMemberValue() const
+{
+  return MemberValue;
+}
+//=============================================================================
+void sstPGisTableMemberCls::setMemberValue(const std::string &value)
+{
+  MemberValue = value;
 }
 //=============================================================================
 sstPGisSampleBaseCls::sstPGisSampleBaseCls(sstMisc01AscFilCls *poTmpSqlFile, const std::string oTmpTabNam)
@@ -163,6 +139,38 @@ int sstPGisSampleBaseCls::SetTableMember(int iKey,const std::string oMemberName,
   oTableMember.setMemberType(oMemberType);
   this->oTableMemberVector.push_back(oTableMember);
   this->uiActTabRec = 0;
+  return iStat;
+}
+//=============================================================================
+int sstPGisSampleBaseCls::SetTableValue(int iKey, const std::string oMemberType)
+{
+  int iStat = 0;
+//-----------------------------------------------------------------------------
+  if ( iKey <= 0 ) return -1;
+  if ( iKey > int (this->oTableMemberVector.size()) ) return -1;
+
+  sstPGisTableMemberCls oTableMember;
+  oTableMember = this->oTableMemberVector[iKey-1];
+  oTableMember.setMemberValue(oMemberType);
+  this->oTableMemberVector[iKey-1] = oTableMember;
+  return iStat;
+}
+//=============================================================================
+int sstPGisSampleBaseCls::SetTableValueInt2(int iKey, const int iMemberType)
+{
+  int iStat = 0;
+//-----------------------------------------------------------------------------
+  if ( iKey <= 0 ) return -1;
+  if ( iKey > int (this->oTableMemberVector.size()) ) return -1;
+
+  sstStr01Cls oCsvCnvt;
+  std::string oTmpStr;
+  oCsvCnvt.Csv_Int2_2String( 0, iMemberType, &oTmpStr);
+
+  sstPGisTableMemberCls oTableMember;
+  oTableMember = this->oTableMemberVector[iKey-1];
+  oTableMember.setMemberValue(oTmpStr);
+  this->oTableMemberVector[iKey-1] = oTableMember;
   return iStat;
 }
 //=============================================================================
@@ -404,25 +412,73 @@ int sstPGisSamplePointCls::SqlSampleRowInsertPoint(unsigned long     ulVal,
 
   // write polygon number as GID to sql string
   oCsvCnvt.SetReadPositon(0,0);
-  oCsvCnvt.Csv_Int4_2String(0,ulVal,&sSqlStr);
+  unsigned long int ulTabRecPos=1;
+
+  for (std::vector<sstPGisTableMemberCls>::iterator it = this->oTableMemberVector.begin();
+                                                    it != this->oTableMemberVector.end(); ++it)
+  {
+    sstPGisTableMemberCls oTableMember = *it;
+    std::string oTmpStr;
+    oTmpStr = oTableMember.getMemberValue();
+    switch (ulTabRecPos) {
+      case 1:
+        {
+      if (ulVal == 0)  oCsvCnvt.Csv_Str_2String(0,oTmpStr,&sSqlStr);
+      else   oCsvCnvt.Csv_Int4_2String(0,ulVal,&sSqlStr);
+          break;
+        }
+      case 2:
+        {
+      oCsvCnvt.SetSeparatorTyp(0,1);
+      oCsvCnvt.SetBracket(0,(char*)"'");
+      oCsvCnvt.SetSeparator(0,(char*)",");
+      if (oValStr.length() == 0)
+        oCsvCnvt.Csv_Str_2String(0,oTmpStr,&sSqlStr);
+          else
+            oCsvCnvt.Csv_Str_2String(0,oValStr,&sSqlStr);
+          break;
+        }
+      default:
+        {
+          if (it != finalIter)
+          {
+            oCsvCnvt.SetSeparatorTyp(0,1);
+            oCsvCnvt.SetBracket(0,(char*)"'");
+            oCsvCnvt.SetSeparator(0,(char*)",");
+            oCsvCnvt.Csv_Str_2String(0,oTmpStr,&sSqlStr);
+          }
+          break;
+        }
+      }  // end switch
+    if (it != finalIter)
+    {
+      // sSqlStr += ",";
+    }
+    else
+    {
+      // write geometry type to sql string
+      oDoubleStr = "ST_GeomFromText('POINT(";
+
+      // write for example 32540694.64 5804147.73 to oDoubleStr
+      sstPostGis01_CvtSqlStr oSqlCvt;
+      oSqlCvt.AppendCoor2String(0,oPnt.x,oPnt.y,&oDoubleStr);
+      oDoubleStr += ")' ";
+      oCsvCnvt.SetSeparatorTyp(0,0);
+      oCsvCnvt.SetBracket(0,(char*)"");
+      oCsvCnvt.Csv_Str_2String(0,oDoubleStr,&sSqlStr);
+    }
+    ulTabRecPos++;
+  }
+
+  // oCsvCnvt.Csv_Int4_2String(0,ulVal,&sSqlStr);
 
   // write attribute name to sql string
-  oCsvCnvt.SetSeparatorTyp(0,1);
-  oCsvCnvt.SetBracket(0,(char*)"'");
-  oCsvCnvt.SetSeparator(0,(char*)",");
-  oCsvCnvt.Csv_Str_2String(0,oValStr,&sSqlStr);
+  // oCsvCnvt.SetSeparatorTyp(0,1);
+  // oCsvCnvt.SetBracket(0,(char*)"'");
+  // oCsvCnvt.SetSeparator(0,(char*)",");
+  // oCsvCnvt.Csv_Str_2String(0,oValStr,&sSqlStr);
   // sSqlStr2 += this->
 
-  // write geometry type to sql string
-  oDoubleStr = "ST_GeomFromText('POINT(";
-
-  // write for example 32540694.64 5804147.73 to oDoubleStr
-  sstPostGis01_CvtSqlStr oSqlCvt;
-  oSqlCvt.AppendCoor2String(0,oPnt.x,oPnt.y,&oDoubleStr);
-  oDoubleStr += ")' ";
-  oCsvCnvt.SetSeparatorTyp(0,0);
-  oCsvCnvt.SetBracket(0,(char*)"");
-  oCsvCnvt.Csv_Str_2String(0,oDoubleStr,&sSqlStr);
 
   // write SRID and finish string
   oDoubleStr = this->getEPSG() + ")  );";

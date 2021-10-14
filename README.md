@@ -23,6 +23,12 @@ This file could be imported to PostgreSQL/Postgis via PgAdmin4 > Import SQL-File
 -------------------------------------------------------------------------------
 App sstDxf2Postgis01 imports Dxf Data to Postgis Import SQL-File
 
+Result looks like this:
+
+CREATE TABLE Point ( gid serial primary key, Layer varchar(20), Linetype varchar(20), handle varchar(20), geom geometry(POINT) );
+INSERT INTO Point (gid,Layer,Linetype,handle,geom) VALUES ( 1,'0','BYLAYER','48',ST_GeomFromText('POINT(100.00 100.00)' ,3456)  );
+INSERT INTO Point (gid,Layer,Linetype,handle,geom) VALUES ( 1,'0','BYLAYER','49',ST_GeomFromText('POINT(102.00 100.00)' ,3456)  );
+
 
 -------------------------------------------------------------------------------
 Structure of coding projects should be:
@@ -36,10 +42,11 @@ Structure of coding projects should be:
 
 July 2021, Hanover, Germany, Uli Rehr
 
-Versions <BR>
+Versions: <BR>
 
 20210722: Version 1.00: Create empty repo in github. <BR>
 20210928: Version 1.01: Test update repo. <BR>
 20210929: Version 1.02: Add Code to repo. <BR>
 20210930: Version 1.03: Add Test App sstPostgis01LibTest. <BR>
 20211008: Version 1.04: Add Test App sstDxf2Postgis01. <BR>
+20211014: Version 1.05: Expand export to more than one attribut, but still only stringattribut(varchar). <BR>

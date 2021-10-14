@@ -45,7 +45,7 @@
 #include <sstMisc01Lib.h>
 #include <sstRec04Lib.h>
 
-// Strukturen und Klassen ------------------------------------------------------
+// Structures and Classes ------------------------------------------------------
 
 //==============================================================================
 /**
@@ -134,7 +134,6 @@ class sstPGisTableMemberCls
      */
      // ----------------------------------------------------------------------------
      void setMemberName(const std::string &value);
-
      //==============================================================================
      /**
      * @brief // Get Member Type <BR>
@@ -153,10 +152,30 @@ class sstPGisTableMemberCls
      */
      // ----------------------------------------------------------------------------
      void setMemberType(const std::string &value);
+     //==============================================================================
+     /**
+     * @brief // Get Member Value <BR>
+     * iStat = oPGisTableMember.getMemberValue();
+     *
+     * @return value
+     */
+     // ----------------------------------------------------------------------------
+     std::string getMemberValue() const;
+     //==============================================================================
+     /**
+     * @brief // Set Member Value <BR>
+     * iStat = oPGisTableMember.setMemberValue(value);
+     *
+     * @param value [in] value
+     */
+     // ----------------------------------------------------------------------------
+     void setMemberValue(const std::string &value);
+     //==============================================================================
 
 private:  // Private functions
-  std::string MemberName;        /**< Name of Table Member */
+     std::string MemberName;        /**< Name of Table Member */
   std::string MemberType;        /**< Type of Table Member */
+  std::string MemberValue;       /**< String Value of Table Member */
 };
 //==============================================================================
 /**
@@ -208,6 +227,36 @@ class sstPGisSampleBaseCls
      */
      // ----------------------------------------------------------------------------
      int SetTableMember(int iKey,const std::string oMemberName, const std::string oMemberType);
+     //==============================================================================
+     /**
+     * @brief // Set Value to Table Member <BR>
+     * iStat = oPGisSample.setTableValue ( iRecNo, oMemberValue);
+     *
+     * @param iRecNo [in] Recond Number of Table member
+     * @param oMemberValue [in] Value of Table member
+     *
+     * @return Errorstate
+     *
+     * @retval   = 0: OK
+     * @retval   < 0: Unspecified Error
+     */
+     // ----------------------------------------------------------------------------
+     int SetTableValue(int iRecNo, const std::string oMemberValue);
+     //==============================================================================
+     /**
+     * @brief // Set Value to Table Member <BR>
+     * iStat = oPGisSample.setTableValue ( iRecNo, oMemberValue);
+     *
+     * @param iRecNo [in] Recond Number of Table member
+     * @param iMemberValue [in] Value of Table member
+     *
+     * @return Errorstate
+     *
+     * @retval   = 0: OK
+     * @retval   < 0: Unspecified Error
+     */
+     // ----------------------------------------------------------------------------
+     int SetTableValueInt2(int iRecNo, const int iMemberValue);
      //==============================================================================
      /**
      * @brief // Get Value <BR>
@@ -670,7 +719,5 @@ class sstPGisSamplePolygonCls: public sstPGisSampleBaseCls
 #endif
 
 // ------------------------------------------------------------------- Ende ----
-
-
 
 

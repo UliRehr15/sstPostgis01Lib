@@ -11,9 +11,10 @@
  * See the COPYING file for more information.
  *
  **********************************************************************/
-// sstDxf2Postgis01.cpp    01.10.21  Re.    01.10.21  Re.
+// sstDxf2Postgis01.cpp    14.10.21  Re.    01.10.21  Re.
 //
 // App converts Dxf Data to Postgis SQL Import File.
+// Test with File TestPoint.dxf from sstDxf03LibTest.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -94,49 +95,57 @@ int main ()
 
   oSamplePoint.SetTableMember(0,"gid","serial primary key");
   oSamplePoint.SetTableMember(0,"Layer","varchar(20)");
+  oSamplePoint.SetTableMember(0,"Linetype","varchar(20)");
+  oSamplePoint.SetTableMember(0,"handle","varchar(20)");
   oSamplePoint.SetTableMember(0,"geom","geometry(POINT)");
 
   // Sample SQL Create Point Row
   oSamplePoint.SqlSampleRowCreatePoint();
-  oPrt.SST_PrtWrtChar( 1, (char*)"Create POINT", (char*)"Test checked: ");
+  oPrt.SST_PrtWrtChar( 1, (char*)"POINT Create Table / Insert Statement", (char*)"Test checked: ");
 
   DL_PointData oDLPoint;               // Entity Point from dxflib
-  DL_Attributes oDLAttributes;
+  DL_Attributes oDLAttributes;         // Class Dxf Attributes from dxflib
 
   // dREC04RECNUMTYP dRecNo = 1;
   dREC04RECNUMTYP dRecNo = 1;
   for (dRecNo = 1; dRecNo <= dEntRecs; dRecNo++)
   {
     iStat = oDxfDB.ReadPoint( 0, dRecNo, &oDLPoint, &oDLAttributes);
+    assert(iStat >= 0);
 
     // Sample SQL Insert Point Row
     sstMath01dPnt3Cls dPnt;
     dPnt.Set(oDLPoint.x, oDLPoint.y,0.0);
+    oSamplePoint.SetTableValue( 3, oDLAttributes.getLinetype());
+    oSamplePoint.SetTableValueInt2( 4, oDLAttributes.getHandle());
     oSamplePoint.SqlSampleRowInsertPoint( 1, oDLAttributes.getLayer(), dPnt);
   }
 
-  // Sample SQL Create Point Row
-  oSampleLinestring.SetTableMember(0,"gid","serial primary key");
-  oSampleLinestring.SetTableMember(0,"DBS","varchar(20)");
-  oSampleLinestring.SetTableMember(0,"geom","geometry(LINESTRING)");
-  iStat = oSampleLinestring.SqlSampleRowCreateLinestring();
-
-  // Sample SQL Insert Point Row
-  std::vector<sstMath01dPnt3Cls> oPntVector;
-  sstMath01dPnt3Cls oPnt;
-  oPnt.Set(32539500.00, 5802600.00,0.0);
-  oPntVector.push_back(oPnt);
-  oPnt.Set(32539600.00, 5802500.00,0.0);
-  oPntVector.push_back(oPnt);
-  oPnt.Set(32539700.00, 5802400.00,0.0);
-  oPntVector.push_back(oPnt);
-
-  iStat = oSampleLinestring.SqlSampleRowInsertLinestring( 1, "8100000000000", &oPntVector);
-  oPrt.SST_PrtWrtChar( 1, (char*)"Create LINESTRING", (char*)"Test checked: ");
-
-
+  // Close SQL file after full writing
   oPGisSqlFile.fcloseFil(0);
   oPrt.SST_PrtWrtChar( 1, (char*)"SQL Write File closed", (char*)"Test2.sql -");
+
+  // Reopen File Test2.sql
+  iStat = oPGisSqlFile.fopenRd(0,"Test2.sql");
+  assert(iStat >= 0);
+
+  // Read lines from file and compare file rows with wished result
+  std::string oSqlFileStr;
+  // Read and compare first row in File
+  iStat = oPGisSqlFile.Rd_StrDS1( 0, &oSqlFileStr);
+  assert(iStat >= 0);
+  iStat = oSqlFileStr.compare("CREATE TABLE Point ( gid serial primary key, Layer varchar(20), Linetype varchar(20), handle varchar(20), geom geometry(POINT) );");
+  assert(iStat == 0);
+
+  // Read and compare second row in File
+  iStat = oPGisSqlFile.Rd_StrDS1( 0, &oSqlFileStr);
+  assert(iStat >= 0);
+  iStat = oSqlFileStr.compare("INSERT INTO Point (gid,Layer,Linetype,handle,geom) VALUES ( 1,'0','BYLAYER','48',ST_GeomFromText('POINT(100.00 100.00)' ,3456)  );");
+  assert(iStat == 0);
+
+  // Close file
+  oPGisSqlFile.fcloseFil(0);
+  oPrt.SST_PrtWrtChar( 1, (char*)"SQL Read/Compare File closed", (char*)"Test2.sql -");
 
   // Close Protocol
   iStat = oPrt.SST_PrtZu( 1);

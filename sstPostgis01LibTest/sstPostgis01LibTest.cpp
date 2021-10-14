@@ -57,22 +57,29 @@ int main ()
 
   oSamplePoint.SetTableMember(0,"gid","serial primary key");
   oSamplePoint.SetTableMember(0,"DBS","varchar(20)");
+  oSamplePoint.SetTableMember(0,"XXX","varchar(20)");
   oSamplePoint.SetTableMember(0,"geom","geometry(POINT)");
 
-  // Sample SQL Create Point Row
+  // Sample SQL CREATE TABLE Point Row
   oSamplePoint.SqlSampleRowCreatePoint();
-  oPrt.SST_PrtWrtChar( 1, (char*)"Create POINT", (char*)"Test checked: ");
 
-  // Sample SQL Insert Point Row
+  // Sample SQL INSERT Point Row
   sstMath01dPnt3Cls dPnt;
   dPnt.Set(32539500.00, 5802600.00,0.0);
-  oSamplePoint.SqlSampleRowInsertPoint( 1, "8100000000000", dPnt);
+  oSamplePoint.SetTableValue(3,"Test1");  // Write next Value to Table Member 3
+  oSamplePoint.SqlSampleRowInsertPoint( 1, "8100000000000", dPnt);  // Write all Table members to INSERT File Row
+  dPnt.Set(32539700.00, 5802400.00,0.0);
+  oSamplePoint.SetTableValue(3,"Test2");  // Write next Value to Table Member 3
+  oSamplePoint.SqlSampleRowInsertPoint( 2, "8100000000001", dPnt);  // Write all Table members to INSERT File Row
+
+  oPrt.SST_PrtWrtChar( 1, (char*)"Create POINT", (char*)"Test checked: ");
 
   // Sample SQL Create Point Row
   oSampleLinestring.SetTableMember(0,"gid","serial primary key");
   oSampleLinestring.SetTableMember(0,"DBS","varchar(20)");
   oSampleLinestring.SetTableMember(0,"geom","geometry(LINESTRING)");
   iStat = oSampleLinestring.SqlSampleRowCreateLinestring();
+  assert(iStat >= 0);
 
   // Sample SQL Insert Point Row
   std::vector<sstMath01dPnt3Cls> oPntVector;
@@ -85,11 +92,36 @@ int main ()
   oPntVector.push_back(oPnt);
 
   iStat = oSampleLinestring.SqlSampleRowInsertLinestring( 1, "8100000000000", &oPntVector);
+  assert(iStat >= 0);
   oPrt.SST_PrtWrtChar( 1, (char*)"Create LINESTRING", (char*)"Test checked: ");
-
 
   oPGisSqlFile.fcloseFil(0);
   oPrt.SST_PrtWrtChar( 1, (char*)"SQL Write File closed", (char*)"Test2.sql -");
+
+  //=== Check result file =====================================================
+
+  // Reopen File Test2.sql
+  iStat = oPGisSqlFile.fopenRd(0,"Test2.sql");
+  assert(iStat >= 0);
+
+  // Read lines from file and compare file rows with wished result
+  std::string oSqlFileStr;
+  // Read and compare first row in File
+  iStat = oPGisSqlFile.Rd_StrDS1( 0, &oSqlFileStr);
+  assert(iStat >= 0);
+  iStat = oSqlFileStr.compare("CREATE TABLE Form ( gid serial primary key, DBS varchar(20), XXX varchar(20), geom geometry(POINT) );");
+  assert(iStat == 0);
+
+  // Read and compare second row in File
+  iStat = oPGisSqlFile.Rd_StrDS1( 0, &oSqlFileStr);
+  assert(iStat >= 0);
+  iStat = oSqlFileStr.compare("INSERT INTO Form (gid,DBS,XXX,geom) VALUES ( 1,'8100000000000','Test1',ST_GeomFromText('POINT(32539500.00 5802600.00)' ,3456)  );");
+  assert(iStat == 0);
+
+  // Close file
+  oPGisSqlFile.fcloseFil(0);
+  oPrt.SST_PrtWrtChar( 1, (char*)"SQL Read/Compare File closed", (char*)"Test2.sql -");
+
 
   // Close Protocol
   iStat = oPrt.SST_PrtZu( 1);
